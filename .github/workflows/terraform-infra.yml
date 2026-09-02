@@ -1,0 +1,73 @@
+name: Provision Terraform infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths: ["infra/**"]
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VAR_project: cvbot
+  TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+  TF_VAR_gh_owner: ${{ github.repository_owner }}
+  TF_VAR_gh_repo: ${{ github.event.repository.name }}
+  TF_VAR_gh_pat: ${{ secrets.GH_PAT }}
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.10"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Compute state backend name
+        id: backend
+        run: |
+          account_id=$(aws sts get-caller-identity --query Account --output text)
+          echo "bucket=${TF_VAR_project}-terraform-state-${account_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether remote state already exists
+        id: remote_state
+        run: |
+          if aws s3api head-bucket --bucket "${{ steps.backend.outputs.bucket }}" 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bootstrap with local state (first run, creates all resources incl. the state bucket)
+        if: steps.remote_state.outputs.exists == 'false'
+        run: |
+          terraform init -backend=false
+          terraform apply -auto-approve
+
+      - name: Init against S3 backend (migrates local state on first run)
+        run: |
+          migrate_flag=""
+          if [ "${{ steps.remote_state.outputs.exists }}" = "false" ]; then
+            migrate_flag="-migrate-state -force-copy"
+          fi
+          terraform init \
+            -backend-config="bucket=${{ steps.backend.outputs.bucket }}" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="use_lockfile=true" \
+            $migrate_flag
+
+      - name: Apply
+        run: terraform apply -auto-approve
