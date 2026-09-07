@@ -65,7 +65,11 @@ jobs:
           }
           EOF
           terraform init
-          terraform apply -auto-approve
+          terraform apply -auto-approve \
+            -target=aws_s3_bucket.tf_state \
+            -target=aws_s3_bucket_versioning.tf_state \
+            -target=aws_s3_bucket_server_side_encryption_configuration.tf_state \
+            -target=aws_s3_bucket_public_access_block.tf_state
           rm -f backend_override.tf
 
       - name: Init against S3 backend (migrates local state on first run)
