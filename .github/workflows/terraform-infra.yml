@@ -3,7 +3,10 @@ name: Provision Terraform infrastructure
 on:
   push:
     branches: [main]
-    paths: ["infra/**"]
+    paths: [
+      "infra/**",
+      ".github/workflows/terraform-infra.yml"
+    ]
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
