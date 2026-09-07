@@ -23,20 +23,11 @@ jobs:
       run:
         working-directory: infra
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      bucket: ${{ steps.backend.outputs.bucket }}
     steps:
-      - name: Generate App Token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -67,8 +58,15 @@ jobs:
       - name: Bootstrap with local state (first run, creates all resources incl. the state bucket)
         if: steps.remote_state.outputs.exists == 'false'
         run: |
-          terraform init -backend=false
+          # Swaps the s3 backend for local so init/apply don't require the not-yet-existing bucket.
+          cat > backend_override.tf <<'EOF'
+          terraform {
+            backend "local" {}
+          }
+          EOF
+          terraform init
           terraform apply -auto-approve
+          rm -f backend_override.tf
 
       - name: Init against S3 backend (migrates local state on first run)
         run: |
@@ -85,6 +83,47 @@ jobs:
 
       - name: Apply
         run: terraform apply -auto-approve
+
+  diagram:
+    needs: terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      contents: write
+    steps:
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.10"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Init against S3 backend
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ needs.terraform.outputs.bucket }}" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="use_lockfile=true"
 
       - name: Set up Go
         uses: actions/setup-go@v5
