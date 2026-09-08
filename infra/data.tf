@@ -19,7 +19,3 @@ data "aws_subnets" "default" {
 data "aws_ssm_parameter" "runner_ami" {
   name = var.ami_ssm_parameter
 }
-
-data "aws_kms_key" "ssm" {
-  key_id = "alias/aws/ssm"
-}
