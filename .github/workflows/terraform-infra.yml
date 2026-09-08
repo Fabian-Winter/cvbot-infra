@@ -15,6 +15,7 @@ env:
   TF_VAR_gh_owner: ${{ github.repository_owner }}
   TF_VAR_gh_repo: ${{ vars.GH_REPO }}
   TF_VAR_gh_pat: ${{ secrets.GH_PAT }}
+  TF_VAR_gh_oidc_claim: ${{ secrets.GH_OIDC_CLAIM }}
 
 jobs:
   terraform:

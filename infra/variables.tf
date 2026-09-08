@@ -26,6 +26,12 @@ variable "gh_pat" {
   sensitive   = true
 }
 
+variable "gh_oidc_claim" {
+  description = "GitHub OIDC sub claim prefix used by the runner to self-register."
+  type        = string
+  sensitive   = true
+}
+
 variable "ec2_instance_type" {
   description = "Instance type of the self-hosted GitHub Actions runner."
   type        = string

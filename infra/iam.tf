@@ -108,7 +108,7 @@ data "aws_iam_policy_document" "gha_deploy_assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.gh_owner}/${var.gh_repo}:*"]
+      values   = ["${var.gh_oidc_claim}:*"]
     }
   }
 }
