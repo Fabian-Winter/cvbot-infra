@@ -17,6 +17,11 @@ if [ ! -f config.sh ]; then
   ./bin/installdependencies.sh || true
 fi
 
+# Runner executes arbitrary workflow code, so it must not run as root.
+id -u gha-runner &>/dev/null || useradd -r -m -d /opt/actions-runner -s /usr/sbin/nologin gha-runner
+chown -R gha-runner:gha-runner /opt/actions-runner
+
+# Create script to register the runner with GitHub
 cat > /opt/actions-runner/register.sh <<'REG'
 #!/bin/bash
 set -euo pipefail
@@ -33,6 +38,7 @@ REG_TOKEN=$(curl -sX POST -H "Authorization: token $${PAT}" \
 REG
 chmod +x /opt/actions-runner/register.sh
 
+# Create script to deregister the runner from GitHub
 cat > /opt/actions-runner/deregister.sh <<'DEREG'
 #!/bin/bash
 set -euo pipefail
@@ -61,7 +67,7 @@ ExecStartPre=/opt/actions-runner/register.sh
 ExecStart=/opt/actions-runner/run.sh
 ExecStop=/opt/actions-runner/deregister.sh
 Restart=no
-User=root
+User=gha-runner
 
 [Install]
 WantedBy=multi-user.target
