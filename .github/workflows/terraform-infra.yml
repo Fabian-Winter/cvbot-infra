@@ -145,14 +145,14 @@ jobs:
       - name: Generate infrastructure diagram
         run: |
           mkdir -p ../docs
-          terraform state pull | inframap generate | dot -Tsvg > ../docs/infrastructure.svg
+          terraform state pull | inframap generate | dot -Tpng > ../docs/infrastructure.png
 
       - name: Commit infrastructure diagram
         working-directory: .
         run: |
           git config user.name "repo-push-bot"
           git config user.email "repo-push-bot@users.noreply.github.com"
-          git add docs/infrastructure.svg
+          git add docs/infrastructure.png
           if git diff --cached --quiet; then
             echo "No documentation changes to commit."
             exit 0
