@@ -13,7 +13,7 @@ env:
   TF_VAR_project: cvbot
   TF_VAR_aws_region: ${{ vars.AWS_REGION }}
   TF_VAR_gh_owner: ${{ github.repository_owner }}
-  TF_VAR_gh_repo: ${{ github.event.repository.name }}
+  TF_VAR_gh_repo: ${{ vars.GH_REPO }}
   TF_VAR_gh_pat: ${{ secrets.GH_PAT }}
 
 jobs:
