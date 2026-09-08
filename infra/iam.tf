@@ -54,6 +54,12 @@ data "aws_iam_policy_document" "runner" {
     actions   = ["ssm:GetParameter"]
     resources = [aws_ssm_parameter.gh_pat.arn]
   }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = [data.aws_kms_key.ssm.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "runner" {
