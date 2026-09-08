@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-dnf install -y jq git python3.13 python3.13-pip >/dev/null 2>&1 || dnf install -y jq git python3 python3-pip
+dnf install -y jq git python3.13 python3.13-pip libicu >/dev/null 2>&1 || dnf install -y jq git python3 python3-pip libicu
 
 REGION="${aws_region}"
 GH_OWNER="${gh_owner}"
