@@ -1,9 +1,13 @@
 locals {
   efs_volume_name = "chroma-data"
+
+  # The image ships no curl, so the probe uses the bundled Python instead.
+  webapp_health_check_command = "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:${var.webapp_port}/healthz', timeout=3)\""
 }
 
-resource "aws_cloudwatch_log_group" "chromadb" {
-  name = "/ecs/${var.project}-chromadb"
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = "/ecs/${var.project}"
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_ecs_cluster" "this" {
@@ -58,7 +62,7 @@ resource "aws_ecs_task_definition" "chromadb" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.chromadb.name
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "chromadb"
         }
@@ -82,9 +86,100 @@ resource "aws_ecs_service" "chroma" {
     assign_public_ip = true
   }
 
+  service_registries {
+    registry_arn = aws_service_discovery_service.chroma.arn
+  }
+
   # desired_count is toggled at runtime by the start-project/run-pipeline
   # workflows; Terraform must not fight that scaling on subsequent applies.
   lifecycle {
     ignore_changes = [desired_count]
+  }
+}
+
+resource "aws_ecs_task_definition" "webapp" {
+  family                   = "${var.project}-webapp"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = tostring(var.webapp_task_cpu)
+  memory                   = tostring(var.webapp_task_memory)
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.webapp_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "webapp"
+      image     = "${aws_ecr_repository.webapp.repository_url}:${var.webapp_image_tag}"
+      essential = true
+
+      portMappings = [
+        { containerPort = var.webapp_port, protocol = "tcp" }
+      ]
+
+      environment = [
+        # The application defaults to 127.0.0.1, which is unreachable in a task.
+        { name = "WEB_HOST", value = "0.0.0.0" },
+        { name = "WEB_PORT", value = tostring(var.webapp_port) },
+        { name = "AWS_REGION", value = var.aws_region },
+        { name = "CHROMA_HOST", value = "${aws_service_discovery_service.chroma.name}.${local.internal_dns_namespace}" },
+        { name = "CHROMA_PORT", value = tostring(var.chroma_port) },
+        { name = "CHROMA_COLLECTION", value = var.chroma_collection },
+        { name = "EMBEDDING_MODEL_ID", value = var.embedding_model_id },
+        { name = "LLM_MODEL_ID", value = var.llm_model_id },
+        { name = "TOP_K", value = tostring(var.webapp_top_k) },
+        { name = "MAX_CONTEXT_TOKENS", value = tostring(var.webapp_max_context_tokens) },
+        { name = "RESPONSE_TOKEN_BUFFER", value = tostring(var.webapp_response_token_buffer) },
+        { name = "LOG_LEVEL", value = var.webapp_log_level },
+      ]
+
+      # Cloud Map keeps the instance UNHEALTHY until this probe succeeds, so
+      # API Gateway only routes to a task that is actually serving.
+      healthCheck = {
+        command     = ["CMD-SHELL", local.webapp_health_check_command]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "webapp"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_service" "webapp" {
+  name            = "${var.project}-webapp-service"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.webapp.arn
+  desired_count   = 0
+  launch_type     = "FARGATE"
+
+  depends_on = [aws_ecs_cluster_capacity_providers.this]
+
+  # The public IP only serves outbound traffic (ECR, Bedrock, CloudWatch);
+  # inbound is limited to the API Gateway VPC link by the security group.
+  network_configuration {
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [aws_security_group.webapp.id]
+    assign_public_ip = true
+  }
+
+  service_registries {
+    registry_arn   = aws_service_discovery_service.webapp.arn
+    container_name = "webapp"
+    container_port = var.webapp_port
+  }
+
+  # desired_count only ever toggles between 0 and 1 at runtime, and the deploy
+  # workflow registers new task definition revisions; Terraform ignores both.
+  lifecycle {
+    ignore_changes = [desired_count, task_definition]
   }
 }

@@ -15,6 +15,11 @@ variable "gh_owner" {
   type        = string
 }
 
+variable "gh_owner_id" {
+  description = "GitHub repository owner ID, used for the OIDC deploy role trust policy."
+  type        = string
+}
+
 variable "gh_repo" {
   description = "GitHub repository name, used for the OIDC deploy role trust policy."
   type        = string
@@ -22,12 +27,6 @@ variable "gh_repo" {
 
 variable "gh_pat" {
   description = "GitHub PAT (repo Administration: Read & Write) used by the runner to self-register."
-  type        = string
-  sensitive   = true
-}
-
-variable "gh_oidc_claim" {
-  description = "GitHub OIDC sub claim prefix used by the runner to self-register."
   type        = string
   sensitive   = true
 }
@@ -96,4 +95,115 @@ variable "ami_ssm_parameter" {
   description = "SSM parameter name resolving to the AMI used for the runner instance."
   type        = string
   default     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+}
+
+variable "log_retention_days" {
+  description = "Retention of the CloudWatch log groups; keeps conversation traces from being stored indefinitely."
+  type        = number
+  default     = 7
+}
+
+# ---------------------------------------------------------------------------
+# cvbot-retriever web application
+# ---------------------------------------------------------------------------
+variable "webapp_port" {
+  description = "Port the cvbot-retriever web application listens on."
+  type        = number
+  default     = 8080
+}
+
+variable "webapp_image_tag" {
+  description = "Image tag of the web application pulled from ECR."
+  type        = string
+  default     = "latest"
+}
+
+variable "webapp_task_cpu" {
+  description = "Fargate task CPU units of the web application."
+  type        = number
+  default     = 512
+}
+
+variable "webapp_task_memory" {
+  description = "Fargate task memory (MiB) of the web application."
+  type        = number
+  default     = 1024
+}
+
+variable "ecr_image_retention_count" {
+  description = "Number of web application images kept in ECR before the oldest ones expire."
+  type        = number
+  default     = 3
+}
+
+variable "webapp_throttle_rate_limit" {
+  description = "Steady-state requests per second accepted by the API Gateway stage; caps Bedrock cost."
+  type        = number
+  default     = 5
+}
+
+variable "webapp_throttle_burst_limit" {
+  description = "Burst capacity of the API Gateway stage throttling."
+  type        = number
+  default     = 10
+}
+
+# ---------------------------------------------------------------------------
+# Web application runtime configuration (passed as container environment)
+# ---------------------------------------------------------------------------
+variable "chroma_collection" {
+  description = "ChromaDB collection queried by the retriever; must match the one written by cvbot-embedder."
+  type        = string
+  default     = "cvbot_documents"
+}
+
+variable "embedding_model_id" {
+  description = "Bedrock model ID used to embed questions; must match the one used by cvbot-embedder."
+  type        = string
+  default     = "amazon.titan-embed-text-v2:0"
+}
+
+variable "llm_model_id" {
+  description = "Bedrock model ID used to generate answers. Nova requires the eu.* cross-region inference profile in eu-central-1."
+  type        = string
+  default     = "eu.amazon.nova-lite-v1:0"
+}
+
+variable "webapp_top_k" {
+  description = "Number of chunks retrieved from ChromaDB per question."
+  type        = number
+  default     = 4
+}
+
+variable "webapp_max_context_tokens" {
+  description = "Upper bound for the whole context sent to the LLM."
+  type        = number
+  default     = 8000
+}
+
+variable "webapp_response_token_buffer" {
+  description = "Part of webapp_max_context_tokens kept free for the answer."
+  type        = number
+  default     = 1024
+}
+
+variable "webapp_log_level" {
+  description = "Log level of the web application (DEBUG, INFO, WARNING, ERROR)."
+  type        = string
+  default     = "INFO"
+}
+
+# ---------------------------------------------------------------------------
+# Bedrock authorisation
+# ---------------------------------------------------------------------------
+variable "bedrock_foundation_model_ids" {
+  description = "Foundation models the web application task may invoke. Inference profiles also require the underlying foundation model."
+  type        = list(string)
+  default     = ["amazon.titan-embed-text-v2:0", "amazon.nova-lite-v1:0"]
+}
+
+variable "bedrock_inference_profile_ids" {
+  description = "Cross-region inference profiles the web application task may invoke."
+  type        = list(string)
+  default     = ["eu.amazon.nova-lite-v1:0"]
 }

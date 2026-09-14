@@ -92,6 +92,42 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
 }
 
 # ---------------------------------------------------------------------------
+# Web application task role: invoke the Bedrock models used by the retriever.
+# ChromaDB is reached over the network, which is governed by security groups
+# and needs no IAM permission.
+# ---------------------------------------------------------------------------
+locals {
+  # Cross-region inference profiles route to the foundation model in any region
+  # of the profile, so the region part of the model ARN stays a wildcard.
+  bedrock_model_arns = concat(
+    [for id in var.bedrock_foundation_model_ids : "arn:aws:bedrock:*::foundation-model/${id}"],
+    [
+      for id in var.bedrock_inference_profile_ids :
+      "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:inference-profile/${id}"
+    ],
+  )
+}
+
+resource "aws_iam_role" "webapp_task" {
+  name               = "${var.project}-webapp-task-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
+}
+
+data "aws_iam_policy_document" "webapp_task" {
+  statement {
+    effect    = "Allow"
+    actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+    resources = local.bedrock_model_arns
+  }
+}
+
+resource "aws_iam_role_policy" "webapp_task" {
+  name   = "${var.project}-webapp-task-policy"
+  role   = aws_iam_role.webapp_task.id
+  policy = data.aws_iam_policy_document.webapp_task.json
+}
+
+# ---------------------------------------------------------------------------
 # GitHub OIDC provider + deploy role assumed by the workflows (no static keys)
 # ---------------------------------------------------------------------------
 resource "aws_iam_openid_connect_provider" "github" {
@@ -119,7 +155,7 @@ data "aws_iam_policy_document" "gha_deploy_assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${var.gh_oidc_claim}:*"]
+      values   = ["repo:${var.gh_owner}@${var.gh_owner_id}/${var.project}-*"]
     }
   }
 }
@@ -146,6 +182,44 @@ data "aws_iam_policy_document" "gha_deploy" {
     effect    = "Allow"
     actions   = ["sts:GetCallerIdentity"]
     resources = ["*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+      "ecr:PutImage",
+      "ecr:BatchGetImage",
+      "ecr:DescribeImages",
+    ]
+    resources = [aws_ecr_repository.webapp.arn]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition"]
+    resources = ["*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = [aws_iam_role.webapp_task.arn, aws_iam_role.ecs_task_execution.arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
   }
 }
 
