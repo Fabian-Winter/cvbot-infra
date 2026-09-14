@@ -130,6 +130,14 @@ resource "aws_ecs_task_definition" "webapp" {
         { name = "MAX_CONTEXT_TOKENS", value = tostring(var.webapp_max_context_tokens) },
         { name = "RESPONSE_TOKEN_BUFFER", value = tostring(var.webapp_response_token_buffer) },
         { name = "LOG_LEVEL", value = var.webapp_log_level },
+        { name = "RATE_LIMIT_PER_MINUTE", value = tostring(var.webapp_rate_limit_per_minute) },
+        { name = "RATE_LIMIT_PER_HOUR", value = tostring(var.webapp_rate_limit_per_hour) },
+        # The task is only reachable through the API Gateway, so the client
+        # address always arrives in X-Forwarded-For.
+        { name = "TRUST_FORWARDED_FOR", value = tostring(var.webapp_trust_forwarded_for) },
+        { name = "CORS_ALLOWED_ORIGINS", value = join(",", var.webapp_cors_allowed_origins) },
+        { name = "CONVERSATION_TTL_SECONDS", value = tostring(var.webapp_conversation_ttl_seconds) },
+        { name = "MAX_CONVERSATIONS", value = tostring(var.webapp_max_conversations) },
       ]
 
       # Cloud Map keeps the instance UNHEALTHY until this probe succeeds, so

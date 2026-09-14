@@ -194,6 +194,45 @@ variable "webapp_log_level" {
 }
 
 # ---------------------------------------------------------------------------
+# Web application hardening (passed as container environment)
+# ---------------------------------------------------------------------------
+variable "webapp_rate_limit_per_minute" {
+  description = "Questions a single client may have answered per minute; the per-client counterpart of the API Gateway throttling."
+  type        = number
+  default     = 10
+}
+
+variable "webapp_rate_limit_per_hour" {
+  description = "Questions a single client may have answered per hour."
+  type        = number
+  default     = 60
+}
+
+variable "webapp_trust_forwarded_for" {
+  description = "Whether the application may read the client address from X-Forwarded-For. Required behind the API Gateway, which is the only way in."
+  type        = bool
+  default     = true
+}
+
+variable "webapp_cors_allowed_origins" {
+  description = "Origins allowed to call the JSON API from a browser. Empty means same-origin only."
+  type        = list(string)
+  default     = []
+}
+
+variable "webapp_conversation_ttl_seconds" {
+  description = "Idle time after which a conversation is dropped from the memory of the task."
+  type        = number
+  default     = 1800
+}
+
+variable "webapp_max_conversations" {
+  description = "Upper bound of conversations the task keeps in memory at once."
+  type        = number
+  default     = 50
+}
+
+# ---------------------------------------------------------------------------
 # Bedrock authorisation
 # ---------------------------------------------------------------------------
 variable "bedrock_foundation_model_ids" {

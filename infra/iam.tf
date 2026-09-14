@@ -43,10 +43,12 @@ data "aws_iam_policy_document" "runner" {
     resources = [aws_s3_bucket.documents.arn, "${aws_s3_bucket.documents.arn}/*"]
   }
 
+  # Same model allow list as the web application task: the runner embeds
+  # documents and is used for command line smoke tests of the retriever.
   statement {
     effect    = "Allow"
     actions   = ["bedrock:InvokeModel"]
-    resources = ["*"]
+    resources = local.bedrock_model_arns
   }
 
   statement {
@@ -166,18 +168,47 @@ resource "aws_iam_role" "gha_deploy" {
 }
 
 data "aws_iam_policy_document" "gha_deploy" {
+  # Power state of the runner: limited to the one instance the workflows toggle.
+  statement {
+    effect  = "Allow"
+    actions = ["ec2:StartInstances", "ec2:StopInstances"]
+    resources = [
+      "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${aws_instance.runner.id}"
+    ]
+  }
+
+  # ec2:Describe* has no resource-level permissions and must stay on "*".
   statement {
     effect    = "Allow"
-    actions   = ["ec2:StartInstances", "ec2:StopInstances", "ec2:DescribeInstances", "ec2:DescribeNetworkInterfaces"]
+    actions   = ["ec2:DescribeInstances", "ec2:DescribeNetworkInterfaces"]
     resources = ["*"]
   }
 
+  # Scaling the two services the workflows toggle, nothing else.
   statement {
-    effect    = "Allow"
-    actions   = ["ecs:UpdateService", "ecs:DescribeServices", "ecs:DescribeTasks", "ecs:ListTasks"]
-    resources = ["*"]
+    effect  = "Allow"
+    actions = ["ecs:UpdateService", "ecs:DescribeServices"]
+    resources = [
+      aws_ecs_service.chroma.id,
+      aws_ecs_service.webapp.id,
+    ]
   }
 
+  # Task ARNs are not known in advance, so the cluster is pinned by condition.
+  statement {
+    effect    = "Allow"
+    actions   = ["ecs:DescribeTasks", "ecs:ListTasks"]
+    resources = ["*"]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "ecs:cluster"
+      values   = [aws_ecs_cluster.this.arn]
+    }
+  }
+
+  # sts:GetCallerIdentity and ecr:GetAuthorizationToken are account wide calls
+  # without resource-level permissions.
   statement {
     effect    = "Allow"
     actions   = ["sts:GetCallerIdentity"]
@@ -204,10 +235,20 @@ data "aws_iam_policy_document" "gha_deploy" {
     resources = [aws_ecr_repository.webapp.arn]
   }
 
+  # A new revision has no ARN yet, so RegisterTaskDefinition cannot be scoped;
+  # iam:PassRole below is what keeps it from running arbitrary roles.
   statement {
     effect    = "Allow"
-    actions   = ["ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition"]
+    actions   = ["ecs:RegisterTaskDefinition"]
     resources = ["*"]
+  }
+
+  statement {
+    effect  = "Allow"
+    actions = ["ecs:DescribeTaskDefinition"]
+    resources = [
+      "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project}-*"
+    ]
   }
 
   statement {
