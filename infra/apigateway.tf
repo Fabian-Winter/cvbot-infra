@@ -38,6 +38,32 @@ resource "aws_cloudwatch_log_group" "webapp_api" {
   retention_in_days = var.log_retention_days
 }
 
+# HTTP API (v2) stages check this resource policy, not the account role above,
+# before allowing access logging to a log group.
+resource "aws_cloudwatch_log_resource_policy" "apigateway" {
+  policy_name = "${var.project}-apigateway-logs-policy"
+
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowApiGatewayLogging"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+        ]
+        Resource = "${aws_cloudwatch_log_group.webapp_api.arn}:*"
+      }
+    ]
+  })
+}
+
 # The $default stage keeps the request path unchanged; a named stage would be
 # prepended to the backend path and break the app's routes.
 resource "aws_apigatewayv2_stage" "webapp" {
@@ -45,7 +71,7 @@ resource "aws_apigatewayv2_stage" "webapp" {
   name        = "$default"
   auto_deploy = true
 
-  depends_on = [aws_api_gateway_account.this]
+  depends_on = [aws_api_gateway_account.this, aws_cloudwatch_log_resource_policy.apigateway]
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.webapp_api.arn
