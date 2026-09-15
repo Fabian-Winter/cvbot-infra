@@ -22,6 +22,32 @@ data "aws_iam_policy_document" "ecs_tasks_assume" {
   }
 }
 
+data "aws_iam_policy_document" "apigateway_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com"]
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Account-wide role API Gateway assumes to push access logs to CloudWatch;
+# without it, stages with access_log_settings fail to be created.
+# ---------------------------------------------------------------------------
+resource "aws_iam_role" "apigateway_cloudwatch" {
+  name               = "${var.project}-apigateway-cloudwatch-role"
+  assume_role_policy = data.aws_iam_policy_document.apigateway_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "apigateway_cloudwatch" {
+  role       = aws_iam_role.apigateway_cloudwatch.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
 # ---------------------------------------------------------------------------
 # Runner role: read documents from S3, invoke Bedrock, read its own GitHub PAT.
 # ---------------------------------------------------------------------------

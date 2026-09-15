@@ -4,6 +4,11 @@ resource "aws_apigatewayv2_vpc_link" "webapp" {
   security_group_ids = [aws_security_group.webapp.id]
 }
 
+# Account-wide setting; required once before any stage can enable access logging.
+resource "aws_api_gateway_account" "this" {
+  cloudwatch_role_arn = aws_iam_role.apigateway_cloudwatch.arn
+}
+
 resource "aws_apigatewayv2_api" "webapp" {
   name          = "${var.project}-webapp-api"
   description   = "Public HTTPS entry point of the cvbot-retriever web application"
@@ -39,6 +44,8 @@ resource "aws_apigatewayv2_stage" "webapp" {
   api_id      = aws_apigatewayv2_api.webapp.id
   name        = "$default"
   auto_deploy = true
+
+  depends_on = [aws_api_gateway_account.this]
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.webapp_api.arn
