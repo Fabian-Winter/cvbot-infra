@@ -272,9 +272,7 @@ data "aws_iam_policy_document" "gha_deploy" {
   statement {
     effect  = "Allow"
     actions = ["ecs:DescribeTaskDefinition"]
-    resources = [
-      "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project}-*"
-    ]
+    resources = ["*"]
   }
 
   statement {
