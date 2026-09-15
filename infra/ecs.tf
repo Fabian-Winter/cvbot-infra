@@ -124,7 +124,6 @@ resource "aws_ecs_task_definition" "webapp" {
         { name = "CHROMA_HOST", value = "${aws_service_discovery_service.chroma.name}.${local.internal_dns_namespace}" },
         { name = "CHROMA_PORT", value = tostring(var.chroma_port) },
         { name = "CHROMA_COLLECTION", value = var.chroma_collection },
-        { name = "EMBEDDING_MODEL_ID", value = var.embedding_model_id },
         { name = "LLM_MODEL_ID", value = var.llm_model_id },
         { name = "TOP_K", value = tostring(var.webapp_top_k) },
         { name = "MAX_CONTEXT_TOKENS", value = tostring(var.webapp_max_context_tokens) },

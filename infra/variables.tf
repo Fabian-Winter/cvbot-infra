@@ -157,12 +157,6 @@ variable "chroma_collection" {
   default     = "cvbot_documents"
 }
 
-variable "embedding_model_id" {
-  description = "Bedrock model ID used to embed questions; must match the one used by cvbot-embedder."
-  type        = string
-  default     = "amazon.titan-embed-text-v2:0"
-}
-
 variable "llm_model_id" {
   description = "Bedrock model ID used to generate answers. Nova requires the eu.* cross-region inference profile in eu-central-1."
   type        = string
