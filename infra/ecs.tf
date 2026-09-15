@@ -55,10 +55,6 @@ resource "aws_ecs_task_definition" "chromadb" {
         { sourceVolume = local.efs_volume_name, containerPath = var.chroma_data_path }
       ]
 
-      environment = [
-        { name = "PERSIST_DIRECTORY", value = var.chroma_data_path }
-      ]
-
       logConfiguration = {
         logDriver = "awslogs"
         options = {

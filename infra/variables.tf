@@ -64,7 +64,7 @@ variable "efs_access_point_path" {
 variable "chroma_data_path" {
   description = "Path the EFS volume is mounted at inside the ChromaDB container."
   type        = string
-  default     = "/chroma/chroma"
+  default     = "/data"
 }
 
 variable "ecs_task_cpu" {
