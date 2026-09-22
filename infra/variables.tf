@@ -160,7 +160,7 @@ variable "chroma_collection" {
 variable "llm_model_id" {
   description = "Bedrock model ID used to generate answers. Nova requires the eu.* cross-region inference profile in eu-central-1."
   type        = string
-  default     = "eu.amazon.nova-lite-v1:0"
+  default     = "eu.amazon.nova-2-lite-v1:0"
 }
 
 variable "webapp_top_k" {
@@ -232,11 +232,11 @@ variable "webapp_max_conversations" {
 variable "bedrock_foundation_model_ids" {
   description = "Foundation models the web application task may invoke. Inference profiles also require the underlying foundation model."
   type        = list(string)
-  default     = ["amazon.titan-embed-text-v2:0", "amazon.nova-lite-v1:0"]
+  default     = ["amazon.titan-embed-text-v2:0", "amazon.nova-lite-v1:0", "amazon.nova-2-lite-v1:0"]
 }
 
 variable "bedrock_inference_profile_ids" {
   description = "Cross-region inference profiles the web application task may invoke."
   type        = list(string)
-  default     = ["eu.amazon.nova-lite-v1:0"]
+  default     = ["eu.amazon.nova-lite-v1:0", "eu.amazon.nova-2-lite-v1:0"]
 }
