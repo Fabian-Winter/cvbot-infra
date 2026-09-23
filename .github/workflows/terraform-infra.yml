@@ -17,6 +17,7 @@ env:
   TF_VAR_gh_repo: ${{ vars.GH_REPO }}
   TF_VAR_gh_pat: ${{ secrets.GH_PAT }}
   TF_VAR_webapp_log_level: ${{ vars.WEBAPP_LOG_LEVEL || 'INFO' }}
+  TF_VAR_webapp_top_k: ${{ vars.WEBAPP_TOP_K || 4 }}
 
 jobs:
   terraform:
