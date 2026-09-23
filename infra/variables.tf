@@ -169,6 +169,30 @@ variable "webapp_top_k" {
   default     = 4
 }
 
+variable "webapp_overfetch_factor" {
+  description = "How many times webapp_top_k is fetched before similarity, metadata filters and recency re-rank the candidates."
+  type        = number
+  default     = 4
+}
+
+variable "webapp_filter_weight" {
+  description = "Ranking score a chunk gains per matching metadata field, relative to the similarity score of 0 to 1."
+  type        = number
+  default     = 0.2
+}
+
+variable "webapp_recency_weight" {
+  description = "Largest ranking score the recency bonus adds, derived from the from/to/status metadata at query time. 0 disables it."
+  type        = number
+  default     = 0.2
+}
+
+variable "webapp_recency_window_years" {
+  description = "How many years back the recency bonus decays linearly to zero."
+  type        = number
+  default     = 10
+}
+
 variable "webapp_max_context_tokens" {
   description = "Upper bound for the whole context sent to the LLM."
   type        = number
