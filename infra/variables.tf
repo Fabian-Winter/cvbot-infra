@@ -176,7 +176,7 @@ variable "webapp_overfetch_factor" {
 }
 
 variable "webapp_filter_weight" {
-  description = "Ranking score a chunk gains per matching metadata field, relative to the similarity score of 0 to 1."
+  description = "Largest ranking score the filter bonus adds, scaled by the share of matching metadata fields, relative to the similarity score of 0 to 1."
   type        = number
   default     = 0.2
 }
