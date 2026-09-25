@@ -25,6 +25,7 @@ resource "aws_apigatewayv2_integration" "webapp" {
   connection_id          = aws_apigatewayv2_vpc_link.webapp.id
   integration_uri        = aws_service_discovery_service.webapp.arn
   payload_format_version = "1.0"
+  timeout_milliseconds   = 30000
 }
 
 resource "aws_apigatewayv2_route" "webapp" {
