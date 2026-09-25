@@ -158,9 +158,9 @@ variable "chroma_collection" {
 }
 
 variable "llm_model_id" {
-  description = "Bedrock model ID used to generate answers. Nova requires the eu.* cross-region inference profile in eu-central-1."
+  description = "Bedrock model ID used to generate answers. Requires the eu.* cross-region inference profile in eu-central-1."
   type        = string
-  default     = "eu.amazon.nova-2-lite-v1:0"
+  default     = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
 
 variable "webapp_top_k" {
@@ -196,13 +196,13 @@ variable "webapp_recency_window_years" {
 variable "webapp_max_context_tokens" {
   description = "Upper bound for the whole context sent to the LLM."
   type        = number
-  default     = 8000
+  default     = 32000
 }
 
 variable "webapp_response_token_buffer" {
   description = "Part of webapp_max_context_tokens kept free for the answer."
   type        = number
-  default     = 1024
+  default     = 2048
 }
 
 variable "webapp_log_level" {
@@ -256,11 +256,11 @@ variable "webapp_max_conversations" {
 variable "bedrock_foundation_model_ids" {
   description = "Foundation models the web application task may invoke. Inference profiles also require the underlying foundation model."
   type        = list(string)
-  default     = ["amazon.titan-embed-text-v2:0", "amazon.nova-lite-v1:0", "amazon.nova-2-lite-v1:0"]
+  default     = ["amazon.titan-embed-text-v2:0", "anthropic.claude-haiku-4-5-20251001-v1:0"]
 }
 
 variable "bedrock_inference_profile_ids" {
   description = "Cross-region inference profiles the web application task may invoke."
   type        = list(string)
-  default     = ["eu.amazon.nova-lite-v1:0", "eu.amazon.nova-2-lite-v1:0"]
+  default     = ["eu.anthropic.claude-haiku-4-5-20251001-v1:0"]
 }

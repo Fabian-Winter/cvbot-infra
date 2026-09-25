@@ -29,14 +29,14 @@ env:
   TF_VAR_webapp_throttle_rate_limit: ${{ vars.WEBAPP_THROTTLE_RATE_LIMIT || 5 }}
   TF_VAR_webapp_throttle_burst_limit: ${{ vars.WEBAPP_THROTTLE_BURST_LIMIT || 10 }}
   TF_VAR_chroma_collection: ${{ vars.CHROMA_COLLECTION || 'cvbot_documents' }}
-  TF_VAR_llm_model_id: ${{ vars.LLM_MODEL_ID || 'eu.amazon.nova-2-lite-v1:0' }}
+  TF_VAR_llm_model_id: ${{ vars.LLM_MODEL_ID || 'eu.anthropic.claude-haiku-4-5-20251001-v1:0' }}
   TF_VAR_webapp_top_k: ${{ vars.WEBAPP_TOP_K || 4 }}
   TF_VAR_webapp_overfetch_factor: ${{ vars.WEBAPP_OVERFETCH_FACTOR || 4 }}
   TF_VAR_webapp_filter_weight: ${{ vars.WEBAPP_FILTER_WEIGHT || 0.2 }}
   TF_VAR_webapp_recency_weight: ${{ vars.WEBAPP_RECENCY_WEIGHT || 0.2 }}
   TF_VAR_webapp_recency_window_years: ${{ vars.WEBAPP_RECENCY_WINDOW_YEARS || 10 }}
-  TF_VAR_webapp_max_context_tokens: ${{ vars.WEBAPP_MAX_CONTEXT_TOKENS || 8000 }}
-  TF_VAR_webapp_response_token_buffer: ${{ vars.WEBAPP_RESPONSE_TOKEN_BUFFER || 1024 }}
+  TF_VAR_webapp_max_context_tokens: ${{ vars.WEBAPP_MAX_CONTEXT_TOKENS || 32000 }}
+  TF_VAR_webapp_response_token_buffer: ${{ vars.WEBAPP_RESPONSE_TOKEN_BUFFER || 2048 }}
   TF_VAR_webapp_log_level: ${{ vars.WEBAPP_LOG_LEVEL || 'INFO' }}
   TF_VAR_webapp_rate_limit_per_minute: ${{ vars.WEBAPP_RATE_LIMIT_PER_MINUTE || 10 }}
   TF_VAR_webapp_rate_limit_per_hour: ${{ vars.WEBAPP_RATE_LIMIT_PER_HOUR || 60 }}
