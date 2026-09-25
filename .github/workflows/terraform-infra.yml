@@ -23,8 +23,8 @@ env:
   # Web application infrastructure.
   TF_VAR_webapp_port: ${{ vars.WEBAPP_PORT || 8080 }}
   TF_VAR_webapp_image_tag: ${{ vars.WEBAPP_IMAGE_TAG || 'latest' }}
-  TF_VAR_webapp_task_cpu: ${{ vars.WEBAPP_TASK_CPU || 512 }}
-  TF_VAR_webapp_task_memory: ${{ vars.WEBAPP_TASK_MEMORY || 1024 }}
+  TF_VAR_webapp_task_cpu: ${{ vars.WEBAPP_TASK_CPU || 256 }}
+  TF_VAR_webapp_task_memory: ${{ vars.WEBAPP_TASK_MEMORY || 512 }}
   TF_VAR_ecr_image_retention_count: ${{ vars.ECR_IMAGE_RETENTION_COUNT || 3 }}
   TF_VAR_webapp_throttle_rate_limit: ${{ vars.WEBAPP_THROTTLE_RATE_LIMIT || 5 }}
   TF_VAR_webapp_throttle_burst_limit: ${{ vars.WEBAPP_THROTTLE_BURST_LIMIT || 10 }}

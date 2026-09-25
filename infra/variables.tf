@@ -70,7 +70,7 @@ variable "chroma_data_path" {
 variable "ecs_task_cpu" {
   description = "Fargate task CPU units."
   type        = number
-  default     = 512
+  default     = 256
 }
 
 variable "ecs_task_memory" {
@@ -121,13 +121,13 @@ variable "webapp_image_tag" {
 variable "webapp_task_cpu" {
   description = "Fargate task CPU units of the web application."
   type        = number
-  default     = 512
+  default     = 256
 }
 
 variable "webapp_task_memory" {
   description = "Fargate task memory (MiB) of the web application."
   type        = number
-  default     = 1024
+  default     = 512
 }
 
 variable "ecr_image_retention_count" {
