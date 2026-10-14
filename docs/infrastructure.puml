@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+
+actor "Visitor" as user
+cloud "AWS Bedrock\n(embeddings + LLM)" as bedrock
+
+rectangle "AWS Account" {
+  component "API Gateway\n(HTTP API, $default stage,\nthrottling)" as apigw
+  component "VPC Link" as vpclink
+  component "Cloud Map\n(cvbot.internal)" as cloudmap
+
+  package "ECS Cluster (Fargate)" {
+    component "webapp service\n(cvbot-retriever)" as webapp
+    component "chroma service\n(ChromaDB)" as chroma
+  }
+
+  component "ECR\n(cvbot-webapp)" as ecr
+  database "EFS\n(chroma-data)" as efs
+  database "S3\n(documents)" as s3
+  component "EC2 GitHub Actions runner\n(cvbot-embedder pipeline)" as runner
+}
+
+user --> apigw : HTTPS
+apigw --> vpclink
+vpclink --> cloudmap : webapp (SRV)
+cloudmap --> webapp : routes to task
+webapp --> cloudmap : resolves\nchroma.cvbot.internal
+cloudmap --> chroma : A record
+chroma --> efs : persists vectors
+ecr --> webapp : container image
+webapp ..> bedrock : query embeddings\n+ LLM calls
+s3 --> runner : read documents
+runner --> chroma : write chunks
+runner ..> bedrock : embeddings
+@enduml
