@@ -82,7 +82,7 @@ variable "ecs_task_memory" {
 variable "runner_version" {
   description = "Version of the actions/runner release installed on the EC2 instance."
   type        = string
-  default     = "2.319.1"
+  default     = "2.338.0"
 }
 
 variable "runner_label" {
